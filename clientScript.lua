@@ -5,26 +5,24 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 
 local PlayerGui = player:WaitForChild("PlayerGui")
-local ScreenGui = PlayerGui:WaitForChild("ScreenGui1")
-local ScreenGui2 = PlayerGui:WaitForChild("ScreenGui2")
-ScreenGui2.Enabled = false
+local MenuGui1 = PlayerGui:WaitForChild("ScreenGui1")
+local MenuGui2 = PlayerGui:WaitForChild("ScreenGui2")
+local showDataGui = PlayerGui:WaitForChild("showDataGui")
 local RemoteEvent = ReplicatedStorage:WaitForChild("RemoteEvent")
+local DataGuiRE = ReplicatedStorage:WaitForChild("DataGuiRE")
 
 
-local frame = ScreenGui:WaitForChild("Frame1")
-local frame2 = ScreenGui2:WaitForChild("Frame2")
-local randomButton = ScreenGui2:WaitForChild("randomButton")
-local sendButton2 = ScreenGui2:WaitForChild("sendButton")
-
-
+local frame = MenuGui1:WaitForChild("Frame1")
+local frame2 = MenuGui2:WaitForChild("Frame2")
+local dataFrame = showDataGui:WaitForChild("dataFrame")
+local randomButton = MenuGui2:WaitForChild("randomButton")
+local sendButton2 = MenuGui2:WaitForChild("sendButton")
 
 local data = {"planet", "iterations"}
 local planetData = {}
 local finalData = {}
 
 local dictInfo = {"x_position", "y_position", "z_position",	"mass", "v_x", "v_y", "v_z"	}
-
-
 
 local iterationsBox = frame:WaitForChild("TextBox")
 local sendButton1 = frame:WaitForChild("sendButton")
@@ -87,7 +85,7 @@ local function orderData(random)
 			table.insert(planetData, x_pos)
 			table.insert(planetData, y_pos)
 			table.insert(planetData, z_pos)
-			table.insert(planetData, -tonumber(mass))
+			table.insert(planetData, -tonumber(mass)) --still a bit confused on why the min needs to be there
 			table.insert(planetData, vx)
 			table.insert(planetData, vy)
 			table.insert(planetData, vz)
@@ -128,7 +126,7 @@ local function orderData(random)
 
 	end	
 	print(data, finalData)
-	ScreenGui2.Enabled = false
+	MenuGui2.Enabled = false
 	RemoteEvent:FireServer(data, finalData)
 end
 
@@ -138,8 +136,8 @@ end
 
 
 local function setUpMenu2(amountOfPlanets)
-	ScreenGui.Enabled = false
-	ScreenGui2.Enabled = true
+	MenuGui1.Enabled = false
+	MenuGui2.Enabled = true
 
 	for i,v in ipairs(frame2:GetChildren()) do
 		for z = 1, amountOfPlanets, 1 do
@@ -183,6 +181,22 @@ sendButton1.MouseButton1Click:Connect(function()
 	end
 end)
 
+DataGuiRE.OnClientEvent:Connect(function(pos_x, pos_y, pos_z, mass, v_x, v_y, v_z, n)
+	print(n)
+	for i = 1, n, 1 do
+		local istring = tostring(i)
+		local label = dataFrame:FindFirstChild("planet" .. istring .. "Label")
+		label.Visible = true
+		local planetText = "Planet_" .. tostring(i) .. ": " 
+		local xyzText = "x = " .. tostring(pos_x[i]) .. ", " .. "y = " .. tostring(pos_y[i]) .. ", " .. "z = " .. tostring(pos_z[i]) .. ", "
+		local vxzyText  = "v_x = " .. tostring(v_x[i]) .. ", " .. "v_y = " .. tostring(v_y[i]) .. ", " .. "v_z = " .. tostring(v_z[i]) .. ", "
+		local massText = "m = " .. tostring(mass[i])
+		label.Text = planetText .. xyzText .. vxzyText .. massText
+	end
+
+end)
+
 randomButton.MouseButton1Click:Connect(randomOrderData)
 sendButton2.MouseButton1Click:Connect(orderData)
+
 
