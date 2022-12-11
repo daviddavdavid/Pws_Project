@@ -52,10 +52,8 @@ function vec3.addVectors(vectorArray)
 		
 	end	
 	print(final_vectors)
+	
 	return final_vectors
 end
-
-
-
 
 return vec3
