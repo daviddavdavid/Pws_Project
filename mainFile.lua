@@ -2,16 +2,24 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local vec3 = require(ServerScriptService.vec3Module)
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
 local RemoteEvent = ReplicatedStorage.RemoteEvent
-local dt = 1
+local DataGuiRE = ReplicatedStorage.DataGuiRE
 
+local dt = 1 --the time between each iteration
 
 local colorList = {"Really blue", "Really red", "New Yeller", "Lime green", "Bright violet", "Bright orange", 
 "Medium stone grey", "Toothpaste", "Black", "Burnt Sienna"}
 
+Players.PlayerAdded:Connect(function(player) --makes it so the playerswalkspeed is faster
+	player.CharacterAdded:Connect(function(character)
+		character:FindFirstChildWhichIsA("Humanoid").WalkSpeed = 64
+	end)
+end)
 
 local function createPlanets(n)
 	local tempPlanets = {}
+
 	for i = 1, n, 1 do
 		local planet = Instance.new("Part")
 		planet.Shape = "Ball"
@@ -29,7 +37,7 @@ end
 local function movePlanets(planets, pos_x, pos_y, pos_z)
 	for i,v in ipairs(planets) do
 		print(pos_x, pos_y, pos_z)
-		v.Position = Vector3.new(pos_x[i]/10000000, pos_y[i]/10000000, pos_z[i]/10000000)
+		v.Position = Vector3.new(pos_x[i]/1000000, pos_y[i]/1000000, pos_z[i]/1000000)
 		print(v, v.Position)
 	end
 end
@@ -69,6 +77,7 @@ local function getMainVectors(n, pos_x, pos_y, pos_z, mass)
 			if j == i then
 				continue
 			end
+			--math explained in thesis
 			local dx, dy, dz = vec3.getDeltaxyz(pos_x[i], pos_x[j], pos_y[i], pos_y[j], pos_z[i], pos_z[j])
 			local dist = vec3.getDistance(dx, dy, dz)
 			local Fz = vec3.getGravity(mass[i], mass[j], dist)
@@ -82,8 +91,7 @@ local function getMainVectors(n, pos_x, pos_y, pos_z, mass)
 	table.clear(mainVectorList)
 
 	local dividedVectorList = {}
-	for i = 0, (n-1), 1 do
-		
+	for i = 0, (n-1), 1 do --Sorts the vectorlist so the data can be easily extracted
 		local leftVector = i * (n - 1)
 		dividedVectorList[i+1] = {}
 		
@@ -98,8 +106,6 @@ local function getMainVectors(n, pos_x, pos_y, pos_z, mass)
 	end
 		
 	local finalVectorList = vec3.addVectors(mainVectorList)
-
-	
 
 	return finalVectorList
 	
@@ -116,12 +122,13 @@ local function getNewPositions(mainVectorList, old_pos_x, old_pos_y, old_pos_z, 
 	print(mainVectorList)
 
 	for i = 1, #mainVectorList, 1 do
-		
-        local new_v_x = (mainVectorList[i][1] * dt) + v_x[i]
+		--m/s^2 * s + m/s = m/s
+        local new_v_x = (mainVectorList[i][1] * dt) + v_x[i] 
         local new_v_y = (mainVectorList[i][2] * dt) + v_y[i]
         local new_v_z = (mainVectorList[i][3] * dt) + v_z[i]
 
-        local new_x = (new_v_x * dt) + old_pos_x[i]
+		--m/s * s + m = m
+        local new_x = (new_v_x * dt) + old_pos_x[i] 
         local new_y = (new_v_y * dt) + old_pos_x[i]
         local new_z = (new_v_z * dt) + old_pos_x[i]
 		
@@ -140,12 +147,12 @@ end
 RemoteEvent.OnServerEvent:Connect(function(player, data, planetData)
 	data[1] = tonumber(data[1])
 	data[2] = tonumber(data[2])
-	print(data, planetData)
 	local pos_x, pos_y, pos_z, mass, v_x, v_y, v_z, n, amount = definePosAndMass(data, planetData)
 	local planets = createPlanets(n)
 
-	local max = 0
+	DataGuiRE:FireClient(player, pos_x, pos_y, pos_z, mass, v_x, v_y, v_z, n) --updates the ui that displays the info of the planets
 	
+	local max = 0
 	while amount > max do
 		task.wait(0.1)
 		max += 1
@@ -153,6 +160,7 @@ RemoteEvent.OnServerEvent:Connect(function(player, data, planetData)
 		local mainVectorList = getMainVectors(n, pos_x, pos_y, pos_z, mass)
 		pos_x, pos_y, pos_z, v_x, v_y, v_z = getNewPositions(mainVectorList, pos_x, pos_y, pos_z, v_x, v_y, v_z, dt)
 		movePlanets(planets, pos_x, pos_y, pos_z)
+		DataGuiRE:FireClient(player, pos_x, pos_y, pos_z, mass, v_x, v_y, v_z, n) --updates the ui that displays the info of the planets
 		
 		table.clear(mainVectorList)
 	end
